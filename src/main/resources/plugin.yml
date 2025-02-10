@@ -1,0 +1,20 @@
+# plugin.yml
+name: MinecraftBattleRoyale
+main: com.butterdevelop.battleroyale.BattleRoyalePlugin
+version: '1.0-SNAPSHOT'
+api-version: '1.21'
+commands:
+  startgame:
+    description: Запускает игру Battle Royale.
+  endgame:
+    description: Останавливает игру Battle Royale.
+  votestart:
+    description: Голосование за начало Battle Royale.
+  voteend:
+    description: Голосование за окончание Battle Royale.
+  teamselect:
+    description: Открывает меню выбора команды Battle Royale.
+  kitselect:
+    description: Открывает меню выбора кит-набора Battle Royale.
+  stats:
+    description: Выводит статистику по всем игрокам Battle Royale.
