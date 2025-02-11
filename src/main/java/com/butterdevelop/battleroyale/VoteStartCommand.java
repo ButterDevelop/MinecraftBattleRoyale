@@ -32,7 +32,7 @@ public class VoteStartCommand implements CommandExecutor {
             return true;
         }
 
-        if (plugin.getGameManager().isGameStarted()) {
+        if (plugin.getGameManager().isGameStarted() || plugin.getGameManager().prepareGameTask != null) {
             sender.sendMessage(ChatColor.RED + "Игра уже запущена!");
             return true;
         }

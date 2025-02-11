@@ -2,14 +2,19 @@ package com.butterdevelop.battleroyale;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Color;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Damageable;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,17 +67,37 @@ public class KitManager {
 
         // Набор "Работяга"
         kits.put("Работяга", Arrays.asList(
-                createItem(Material.STONE_AXE, ChatColor.GRAY + "Топор Работяги", 1),
-                createItem(Material.STONE_PICKAXE, ChatColor.GRAY + "Кирка Работяги", 1),
-                createItem(Material.STONE_SHOVEL, ChatColor.GRAY + "Лопата Работяги", 1)
+                createItem(Material.STONE_AXE,     ChatColor.DARK_GRAY + "Топор Работяги",  1),
+                createItem(Material.STONE_PICKAXE, ChatColor.DARK_GRAY + "Кирка Работяги",  1),
+                createItem(Material.STONE_SHOVEL,  ChatColor.DARK_GRAY + "Лопата Работяги", 1)
         ));
 
         // Набор "Путешественник"
-        ItemStack elytra = createItem(Material.ELYTRA, ChatColor.GRAY + "Крылья Путешественника", 1);
+        ItemStack elytra = createItem(Material.ELYTRA, ChatColor.DARK_GREEN + "Крылья Путешественника", 1);
         elytra.setDurability((short)427);
         kits.put("Путешественник", Arrays.asList(
                 elytra,
-                createItem(Material.FIREWORK_ROCKET, ChatColor.GRAY + "Фейерверк Путешественника", 1)
+                createItem(Material.FIREWORK_ROCKET, ChatColor.DARK_GREEN + "Фейерверк Путешественника", 1)
+        ));
+
+        // Набор "Рико"
+        kits.put("Рико", Arrays.asList(
+                createItem(Material.TNT, ChatColor.DARK_RED + "TnT Рико", 1),
+                createItem(Material.FLINT_AND_STEEL, ChatColor.DARK_RED + "Зажигалка Рико", 1)
+        ));
+
+        // Набор "Химик"
+        ItemStack potion = createItem(Material.SPLASH_POTION, ChatColor.DARK_AQUA + "Зелье Химика", 1);
+        PotionMeta potionMeta = (PotionMeta)potion.getItemMeta();
+        PotionEffect potionEffect = new PotionEffect(PotionEffectType.SPEED, 8 * 60 * 20, 1, false, true);
+        if (potionMeta != null) {
+            potionMeta.setColor(Color.WHITE);
+            potionMeta.addCustomEffect(potionEffect, false);
+            potion.setItemMeta(potionMeta);
+        }
+        kits.put("Химик", Arrays.asList(
+                potion,
+                createItem(Material.GLASS_BOTTLE, ChatColor.DARK_AQUA + "Бутылочка Химика", 3)
         ));
     }
 

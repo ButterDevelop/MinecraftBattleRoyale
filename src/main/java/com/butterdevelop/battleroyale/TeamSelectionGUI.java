@@ -44,7 +44,7 @@ public class TeamSelectionGUI {
             // Определяем материал по цвету (простой пример)
             ItemStack item = new ItemStack(material, 1);
             ItemMeta meta = item.getItemMeta();
-            Objects.requireNonNull(meta).setDisplayName(ChatColor.BOLD + teamInfo.getName());
+            Objects.requireNonNull(meta).setDisplayName(teamInfo.getColor() + "" + ChatColor.BOLD + teamInfo.getName());
 
             // Отображаем как выбранное с помощью зачарования (если выбрано)
             if (playerTeam != null && playerTeam.equals(teamInfo.getName())) {
@@ -58,8 +58,13 @@ public class TeamSelectionGUI {
             if (teamPlayers.isEmpty()) {
                 lore.add(ChatColor.GRAY + "В команде пока никого нет.");
             } else {
-                lore.add(ChatColor.GRAY + "Игроки: ");
-                teamPlayers.forEach(teamPlayer -> lore.add(ChatColor.GRAY + "" + ChatColor.BOLD + teamPlayer));
+                lore.add(" ");
+                lore.add(ChatColor.GRAY + "" + ChatColor.BOLD + "Игроки:");
+                teamPlayers.forEach(teamPlayer -> {
+                    // Подсвечиваем имя игрока отдельно для него самого
+                    ChatColor color = teamPlayer.equals(player.getName()) ? ChatColor.WHITE : ChatColor.GRAY;
+                    lore.add(color + teamPlayer);
+                });
             }
             meta.setLore(lore);
             item.setItemMeta(meta);
@@ -86,7 +91,7 @@ public class TeamSelectionGUI {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             // Выставляем пустое имя для заполнителя
-            meta.setDisplayName(ChatColor.ITALIC + "" + ChatColor.WHITE + "Случайная команда");
+            meta.setDisplayName(ChatColor.WHITE + "" + ChatColor.BOLD + "Случайная команда");
 
             // Отображаем как выбранное с помощью зачарования (если выбрано)
             if (playerTeam == null) {

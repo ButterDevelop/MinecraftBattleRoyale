@@ -2,6 +2,8 @@ package com.butterdevelop.battleroyale;
 
 import org.bukkit.*;
 import org.bukkit.WorldBorder;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
@@ -45,12 +47,15 @@ public class GameManager {
     private final Set<UUID> votedForStartingPlayers;
     private final Set<UUID> votedForEndingPlayers;
 
-    public  BukkitRunnable prepareGameTask      = null;
-    private BukkitRunnable airTask              = null;
-    private BukkitRunnable startGameTask        = null;
-    private BukkitRunnable startCountdownTask   = null;
-    private BukkitRunnable damageAllPlayersTask = null;
-    private BukkitRunnable fireworksTask        = null;
+    public  BukkitRunnable prepareGameTask        = null;
+    private BukkitRunnable airTask                = null;
+    private BukkitRunnable startGameTask          = null;
+    private BukkitRunnable startCountdownTask     = null;
+    private BukkitRunnable damageAllPlayersTask   = null;
+    private BukkitRunnable fireworksTask          = null;
+    private BukkitRunnable lateGameListenerTask   = null;
+    private BukkitRunnable glowPlayersTask        = null;
+    private BukkitRunnable damageNotOverworldTask = null;
 
     private final ScoreboardManager scoreboardManager;
 
@@ -183,6 +188,10 @@ public class GameManager {
         return playingPlayers;
     }
 
+    public boolean containsPlayingPlayer(UUID playerId) {
+        return playingPlayers.contains(playerId);
+    }
+
     public void addVotedForStartPlayer(UUID playerId) {
         votedForStartingPlayers.add(playerId);
     }
@@ -302,7 +311,7 @@ public class GameManager {
      * Готовим игрока: чистим инвентарь, снимаем эффекты
      * @param playerId Игрок
      */
-    public static void preparePlayer(UUID playerId) {
+    public void preparePlayer(UUID playerId) {
         Player player = Bukkit.getPlayer(playerId);
         if (player == null) {
             return;
@@ -338,7 +347,11 @@ public class GameManager {
             lobby.setDifficulty(Difficulty.PEACEFUL);
         }
 
+        // Перемещаем игрока в лобби
         player.teleport(lobby.getSpawnLocation());
+
+        // Убираем игроку команду
+        removeTeam(player.getUniqueId());
 
         // Очищаем все эффекты
         player.getActivePotionEffects().forEach(potionEffect -> player.removePotionEffect(potionEffect.getType()));
@@ -476,7 +489,7 @@ public class GameManager {
                 teleportTeamsToArena();
 
                 // Запускаем проверку границы и затем задачу подъёма воздуха
-                scheduleAirRising();
+                scheduleLateGame();
 
                 // Проверка на всякий случай, если будет непредвиденная ошибка, чтобы арена не длилась вечно
                 if (playingPlayers.isEmpty()) {
@@ -805,8 +818,8 @@ public class GameManager {
 
         // Генерируем случайные точки для каждой команды
         for (String team : availableTeams.keySet()) {
-            double randomX = centerX + (random.nextDouble() * radius * 2 - radius);
-            double randomZ = centerZ + (random.nextDouble() * radius * 2 - radius);
+            double randomX = centerX + (random.nextGaussian() * radius * 2 - radius);
+            double randomZ = centerZ + (random.nextGaussian() * radius * 2 - radius);
             Location teamSpawnLocation = new Location(arenaWorld, randomX, maxY, randomZ);
             teamSpawnLocations.put(team, teamSpawnLocation);
         }
@@ -898,21 +911,97 @@ public class GameManager {
     }
 
     /**
-     * Запускает задачу, которая каждую секунду проверяет размер границы и,
-     * как только граница станет минимальной, запускает уничтожение блоков.
+     * Запускает свечение для всех игроков, которые ещё играют
      */
-    private void scheduleAirRising() {
-        new BukkitRunnable() {
+    private void startPlayerGlowing() {
+        Bukkit.broadcastMessage(ChatColor.LIGHT_PURPLE + "Все игроки были подсвечены.");
+
+        PotionEffect glowingPotionEffect = new PotionEffect(PotionEffectType.GLOWING, PotionEffect.INFINITE_DURATION, Integer.MAX_VALUE, false, false);
+
+        glowPlayersTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Если некому выдавать эффект, то отменяем задачу
+                if (playingPlayers.isEmpty()) {
+                    cancel();
+                }
+
+                // Выдаём эффект свечения, если он ещё не выдан
+                for (UUID playerId : playingPlayers) {
+                    Player player = Bukkit.getPlayer(playerId);
+                    if (player == null) {
+                        continue;
+                    }
+
+                    // Выдаём пользователю эффект, если его нет
+                    if (!player.hasPotionEffect(glowingPotionEffect.getType())) {
+                        player.addPotionEffect(glowingPotionEffect);
+                    }
+                }
+            }
+        };
+        glowPlayersTask.runTaskTimer(plugin, 0L, 20L); // проверка каждую секунду
+    }
+
+    /**
+     * Начинаем наносить урон игрокам, которые не в обычном мире
+     */
+    private void startDamageNotOverworld() {
+        damageNotOverworldTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Если некому наносить урон, то отменяем задачу
+                if (playingPlayers.isEmpty()) {
+                    cancel();
+                    return;
+                }
+
+                // Наносим урон
+                playingPlayers.forEach(playerId -> {
+                    Player player = Bukkit.getPlayer(playerId);
+                    if (player != null) {
+                        // Наносим урон пользователю, если он не в обычном мире
+                        if (player.getWorld().getEnvironment() != World.Environment.NORMAL) {
+                            AttributeInstance maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
+                            if (maxHealth != null) {
+                                double health = Math.max(player.getHealth() - maxHealth.getValue() * 0.1, 1);
+                                player.setHealth(health);
+                                player.damage(1);
+                                player.sendMessage(ChatColor.RED + "Барьер достаточно уменьшился. " +
+                                        "Вам нужно вернуться в обычный мир, иначе будет наноситься урон.");
+                            }
+                        }
+                    }
+                });
+            }
+        };
+        damageNotOverworldTask.runTaskTimer(plugin, 0L, 20L); // урон каждую секунду
+    }
+
+    /**
+     * Запускает задачу, которая каждую секунду проверяет размер границы и,
+     * как только граница станет минимальной, запускает события late-game.
+     */
+    private void scheduleLateGame() {
+        lateGameListenerTask = new BukkitRunnable() {
             @Override
             public void run() {
                 WorldBorder border = arenaWorld.getWorldBorder();
                 if (border.getSize() <= borderMinimumSize) {
                     // Граница почти минимальна, запускаем уничтожение блоков
                     startAirRise();
+
+                    // Запускаем свечение для игроков
+                    startPlayerGlowing();
+
+                    // Запускаем урон для всех, кто не в обычном мире
+                    startDamageNotOverworld();
+
                     cancel();
                 }
             }
-        }.runTaskTimer(plugin, 0L, 200L); // проверка каждые 10 секунд
+        };
+        lateGameListenerTask.runTaskTimer(plugin, 0L, 200L); // проверка каждые 10 секунд
     }
 
     /**
@@ -950,7 +1039,7 @@ public class GameManager {
      * Запускает повторяющуюся задачу, которая убирает блоки снизу в центральной области арены.
      */
     private void startAirRise() {
-        Bukkit.broadcastMessage(ChatColor.DARK_GREEN + "Начинается удаление блоков с самого низа мира.");
+        Bukkit.broadcastMessage(ChatColor.DARK_PURPLE + "Начинается удаление блоков с самого низа мира.");
 
         final int startY = -64; // стартовая высота для уничтожения (начало мира)
         airTask = new BukkitRunnable() {
@@ -1014,12 +1103,24 @@ public class GameManager {
             fireworksTask.cancel();
             fireworksTask = null;
         }
+        if (lateGameListenerTask != null) {
+            lateGameListenerTask.cancel();
+            lateGameListenerTask = null;
+        }
+        if (glowPlayersTask != null) {
+            glowPlayersTask.cancel();
+            glowPlayersTask = null;
+        }
+        if (damageNotOverworldTask != null) {
+            damageNotOverworldTask.cancel();
+            damageNotOverworldTask = null;
+        }
 
         // Удаляем всех игроков из команд
         waitingPlayers.forEach(this::removeTeam);
 
         // Возвращаем игроков на их места
-        waitingPlayers.forEach(GameManager::preparePlayer);
+        waitingPlayers.forEach(this::preparePlayer);
 
         // Удаляем всех игроков из играющих
         playingPlayers.forEach(this::removePlayingPlayer);

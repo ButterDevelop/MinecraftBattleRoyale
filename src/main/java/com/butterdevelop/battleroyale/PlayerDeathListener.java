@@ -30,16 +30,12 @@ public class PlayerDeathListener implements Listener {
         final Player player = event.getEntity();
 
         // Если мы не на арене, то выходим
-        if (player.getWorld().getName().equals(GameManager.worldLobbyName)) {
+        String worldName = player.getWorld().getName();
+        if (worldName.equals(GameManager.worldLobbyName) || (
+                !worldName.equals(GameManager.worldArenaName) &&
+                !worldName.equals(GameManager.netherArenaName) &&
+                !worldName.equals(GameManager.endArenaName))) {
             return;
-        }
-
-        // Увеличиваем количество смертей у погибшего
-        plugin.getGameManager().getScoreboardManager().addDeath(player);
-        // Увеличиваем убийства у киллера
-        final Player killer = event.getEntity().getKiller();
-        if (killer != null) {
-            plugin.getGameManager().getScoreboardManager().addKill(killer);
         }
 
         // Эффект молнии бьёт на месте смерти игрока
@@ -47,6 +43,23 @@ public class PlayerDeathListener implements Listener {
 
         // Удаляем все эндерпёрлы игрока
         player.getEnderPearls().forEach(Entity::remove);
+
+        // Убираем человека из игроков
+        plugin.getGameManager().removePlayingPlayer(player.getUniqueId());
+
+        // Если не осталась одна команда, то есть уже был выигрыш
+        if (!plugin.getGameManager().isGameWon()) {
+            // Увеличиваем количество смертей у погибшего
+            plugin.getGameManager().getScoreboardManager().addDeath(player);
+            // Увеличиваем убийства у киллера
+            final Player killer = event.getEntity().getKiller();
+            if (killer != null) {
+                plugin.getGameManager().getScoreboardManager().addKill(killer);
+            }
+
+            // Проверяем на победу
+            plugin.getGameManager().checkForWin();
+        }
 
         // Отложенные действия, чтобы дать увидеть анимацию смерти
         new BukkitRunnable() {
@@ -60,14 +73,5 @@ public class PlayerDeathListener implements Listener {
                 player.sendMessage(ChatColor.RED + "Вы погибли. Теперь вы в режиме наблюдателя.");
             }
         }.runTaskLater(plugin, 15L);
-
-        // Убираем человека из игроков
-        plugin.getGameManager().removePlayingPlayer(player.getUniqueId());
-
-        // Если не осталась одна команда, то есть уже был выигрыш
-        if (!plugin.getGameManager().isGameWon()) {
-            // Проверяем на победу
-            plugin.getGameManager().checkForWin();
-        }
     }
 }

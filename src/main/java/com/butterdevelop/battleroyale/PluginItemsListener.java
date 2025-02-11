@@ -11,10 +11,7 @@ import org.bukkit.inventory.ItemStack;
 
 public class PluginItemsListener implements Listener {
 
-    private final GameManager gameManager;
-
-    public PluginItemsListener(GameManager gameManager) {
-        this.gameManager = gameManager;
+    public PluginItemsListener() {
     }
 
     @EventHandler
@@ -31,7 +28,7 @@ public class PluginItemsListener implements Listener {
                 case COMPASS:
                     if (displayName.equals("Выбор команды")) {
                         event.setCancelled(true);
-                        TeamSelectionGUI.openTeamSelection(player, gameManager);
+                        player.performCommand("teamselect");
                     }
                     break;
 
@@ -52,7 +49,7 @@ public class PluginItemsListener implements Listener {
                 case CHEST:
                     if (displayName.equals("Выбрать кит")) {
                         event.setCancelled(true);
-                        KitSelectionGUI.openKitSelection(player);
+                        player.performCommand("kitselect");
                     }
                     break;
             }
@@ -69,7 +66,8 @@ public class PluginItemsListener implements Listener {
             // Запрещаем выбрасывать все три предмета
             if (displayName.equals("Выбор команды") ||
                     displayName.equals("Статистика") ||
-                    displayName.equals("Голосовать за старт")) {
+                    displayName.equals("Голосовать за старт") ||
+                    displayName.equals("Выбрать кит")) {
                 event.setCancelled(true);
             }
         }

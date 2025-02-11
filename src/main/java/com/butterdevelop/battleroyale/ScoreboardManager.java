@@ -82,6 +82,14 @@ public class ScoreboardManager {
         saveStats();
     }
 
+    /**
+     * Уменьшает количество сыгранных игр.
+     */
+    public void removeGame(Player player) {
+        gamesPlayed.put(player.getUniqueId(), getGamesPlayed(player) - 1);
+        saveStats();
+    }
+
     // Геттеры с дефолтными значениями
     public int getKills(Player player) {
         return kills.getOrDefault(player.getUniqueId(), 0);

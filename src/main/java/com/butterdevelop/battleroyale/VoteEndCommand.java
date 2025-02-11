@@ -49,6 +49,14 @@ public class VoteEndCommand implements CommandExecutor {
         if (plugin.getGameManager().getVotedForEndPlayers().size() == plugin.getGameManager().getWaitingPlayers().size()) {
             Bukkit.broadcastMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Игроки проголосовали за окончание игры. Игра объявлена ничьей.");
 
+            // Отнимаем игру из статистики (не засчитываем её)
+            plugin.getGameManager().getPlayingPlayers().forEach(playerId -> {
+                Player p = Bukkit.getPlayer(playerId);
+                if (p != null) {
+                    plugin.getGameManager().getScoreboardManager().removeGame(p);
+                }
+            });
+
             // Завершаем игру
             plugin.getGameManager().endGame();
         }

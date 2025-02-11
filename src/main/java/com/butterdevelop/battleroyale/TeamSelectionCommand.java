@@ -1,5 +1,6 @@
 package com.butterdevelop.battleroyale;
 
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -21,6 +22,12 @@ public class TeamSelectionCommand implements CommandExecutor {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Эту команду можно использовать только в игре.");
+            return true;
+        }
+
+        // Не даём пользователю выбирать команду во время игры
+        if (gameManager.isGameStarted()) {
+            sender.sendMessage(ChatColor.RED + "Невозможно выбрать команду во время игры.");
             return true;
         }
 

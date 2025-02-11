@@ -1,12 +1,13 @@
 package com.butterdevelop.battleroyale;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.*;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Работаем с порталами подстать режиму игры
@@ -59,6 +60,31 @@ public class PlayerPortalListener implements Listener {
             Location getTo = event.getTo();
             event.setTo(new Location(Bukkit.getWorld(GameManager.worldArenaName), getFrom.getX(), getTo.getY(), getFrom.getZ()));
             return;
+        }
+    }
+
+
+    @EventHandler
+    public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
+        // Проверим, стоит ли игрока кинуть в режим наблюдателя
+        Player player = event.getPlayer();
+
+        // Если это мир лобби, то выходим
+        if (player.getWorld().getName().equals(GameManager.worldLobbyName)) {
+            plugin.getGameManager().preparePlayer(player.getUniqueId());
+            return;
+        }
+
+        // Если игрок не играет, то стоит кинуть его в режим наблюдателя
+        if (!plugin.getGameManager().containsPlayingPlayer(player.getUniqueId())) {
+            // Отложенное на 5 тиков действие
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    // Кидаем игрока в режим наблюдателя
+                    player.setGameMode(GameMode.SPECTATOR);
+                }
+            }.runTaskLater(plugin, 5L);
         }
     }
 }

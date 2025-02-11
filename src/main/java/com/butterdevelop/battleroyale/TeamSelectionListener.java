@@ -38,6 +38,13 @@ public class TeamSelectionListener implements Listener {
                 return;
             }
 
+            if (event.getCurrentItem().getItemMeta() != null && event.getCurrentItem().getItemMeta().hasEnchants()) {
+                player.sendMessage(ChatColor.GREEN + "Вы убрали свой выбор команды. Тогда вы появитесь в случайной.");
+                gameManager.removeTeam(player.getUniqueId());
+                player.closeInventory();
+                return;
+            }
+
             String teamName = Objects.requireNonNull(event.getCurrentItem().getItemMeta()).getDisplayName();
 
             // Удаляем цветовые коды
