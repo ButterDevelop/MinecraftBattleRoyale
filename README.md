@@ -2,11 +2,21 @@
 
 Battle Royale Plugin is a Minecraft Spigot plugin that brings a fast-paced, last-team-standing game mode to your server. With features like dynamic world creation, team selection, kit selection, dynamic world border, and in-game statistics displayed on the TAB list and via commands, this plugin offers an immersive and customizable Battle Royale experience.
 
+![screenshot 1](./screenshots/screenshot1.png)
+![screenshot 2](./screenshots/screenshot2.png)
+![screenshot 3](./screenshots/screenshot3.png)
+![screenshot 4](./screenshots/screenshot4.png)
+![screenshot 5](./screenshots/screenshot5.png)
+![screenshot 6](./screenshots/screenshot6.png)
+![screenshot 7](./screenshots/screenshot7.png)
+![screenshot 8](./screenshots/screenshot8.png)
+
 ## Features
 
 - **Lobby & Game Worlds**  
   - Wait in a dedicated lobby until the game starts.
   - Automatically create and reset arena, Nether, and End worlds for each game round.
+  - Nether world is **1 to 1** to the normal world, unlike the original game, where it is **1 to 8**
   - Configurable world settings (spawn protection, world border, etc.).
 
 - **Team Selection**  
