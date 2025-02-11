@@ -46,7 +46,7 @@ public class VoteEndCommand implements CommandExecutor {
                 ChatColor.GREEN + ", если, к примеру, попался не лучший сид.");
 
         // Если все игроки согласились окончить игру
-        if (plugin.getGameManager().getVotedForEndPlayers().size() == plugin.getGameManager().getWaitingPlayers().size()) {
+        if (plugin.getGameManager().getVotedForEndPlayers().size() == Bukkit.getOnlinePlayers().size()) {
             Bukkit.broadcastMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Игроки проголосовали за окончание игры. Игра объявлена ничьей.");
 
             // Отнимаем игру из статистики (не засчитываем её)

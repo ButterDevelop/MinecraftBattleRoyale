@@ -45,7 +45,7 @@ public class VoteStartCommand implements CommandExecutor {
                 "). Это можно сделать с помощью команды " + ChatColor.BOLD + "/votestart");
 
         // Если все игроки согласились начать игру
-        if (plugin.getGameManager().getVotedForStartPlayers().size() == plugin.getGameManager().getWaitingPlayers().size()) {
+        if (plugin.getGameManager().getVotedForStartPlayers().size() == Bukkit.getOnlinePlayers().size()) {
             Bukkit.broadcastMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Игроки проголосовали за начало игры. Игра начинается.");
 
             // Начинаем игру

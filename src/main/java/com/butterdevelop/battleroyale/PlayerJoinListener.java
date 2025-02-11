@@ -90,13 +90,15 @@ public class PlayerJoinListener implements Listener {
         String worldName = player.getWorld().getName();
         if (worldName.equals(GameManager.worldLobbyName) || (
                 !worldName.equals(GameManager.worldArenaName) &&
-                !worldName.equals(GameManager.netherArenaName) &&
-                !worldName.equals(GameManager.endArenaName))) {
+                        !worldName.equals(GameManager.netherArenaName) &&
+                        !worldName.equals(GameManager.endArenaName))) {
             return;
         }
 
-        // Эффект молнии бьёт на месте смерти игрока
-        player.getWorld().strikeLightningEffect(player.getLocation());
+        // Эффект молнии бьёт на месте смерти игрока, если он был жив
+        if (plugin.getGameManager().containsPlayingPlayer(player.getUniqueId())) {
+            player.getWorld().strikeLightningEffect(player.getLocation());
+        }
 
         // Удаляем все эндерпёрлы игрока
         player.getEnderPearls().forEach(Entity::remove);
