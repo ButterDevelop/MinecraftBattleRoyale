@@ -53,7 +53,8 @@ public class PlayerDeathListener implements Listener {
             plugin.getGameManager().getScoreboardManager().addDeath(player);
             // Увеличиваем убийства у киллера
             final Player killer = event.getEntity().getKiller();
-            if (killer != null) {
+            if (killer != null &&
+                    !plugin.getGameManager().getTeam(killer.getUniqueId()).equals(plugin.getGameManager().getTeam(player.getUniqueId()))) {
                 plugin.getGameManager().getScoreboardManager().addKill(killer);
             }
 

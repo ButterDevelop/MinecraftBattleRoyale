@@ -6,7 +6,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
 /**
@@ -71,6 +70,9 @@ public class PlayerPortalListener implements Listener {
 
         // Если это мир лобби, то выходим
         if (player.getWorld().getName().equals(GameManager.worldLobbyName)) {
+            // Приветствуем игрока
+            player.sendMessage(ChatColor.GREEN + "" + ChatColor.BOLD + "Добро пожаловать в лобби " + ChatColor.UNDERLINE + "Battle Royale!");
+
             plugin.getGameManager().preparePlayer(player.getUniqueId());
             return;
         }

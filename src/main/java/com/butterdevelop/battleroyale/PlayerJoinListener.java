@@ -9,6 +9,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 
 /**
  * При входе игрока:
@@ -38,6 +39,26 @@ public class PlayerJoinListener implements Listener {
         }
     }
 
+    /**
+     * Если пользователь умрёт в мире лобби, то предметы без перезахода не появятся. Решаем эту проблему
+     * @param event Событие возрождения игрока
+     */
+    @EventHandler
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        World  world  = player.getWorld();
+
+        // Если игрок появился в лобби (то есть скорее всего и умер в лобби)
+        if (world.getName().equals(GameManager.worldLobbyName)) {
+            // Подготавливаем игрока
+            plugin.getGameManager().preparePlayer(player.getUniqueId());
+        }
+    }
+
+    /**
+     * Выполняем действия при заходе игрока на сервер
+     * @param event Событие входа игрока на сервер
+     */
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
@@ -56,6 +77,10 @@ public class PlayerJoinListener implements Listener {
         plugin.getGameManager().addWaitingPlayer(player.getUniqueId());
     }
 
+    /**
+     * Выполняем действия при выходе игрока с сервера
+     * @param event Событие выхода игрока с сервера
+     */
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         // Определяем игрока
@@ -78,6 +103,12 @@ public class PlayerJoinListener implements Listener {
 
         // Убираем человека из игроков
         plugin.getGameManager().removePlayingPlayer(player.getUniqueId());
+
+        // Убираем человека из ожидающих игроков
+        plugin.getGameManager().removeWaitingPlayer(player.getUniqueId());
+
+        // Убираем человека из команды
+        plugin.getGameManager().removeTeam(player.getUniqueId());
 
         // Если не осталась одна команда, то есть уже был выигрыш
         if (!plugin.getGameManager().isGameWon()) {

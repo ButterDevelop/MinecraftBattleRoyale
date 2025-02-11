@@ -26,6 +26,8 @@ import java.util.*;
  */
 public class GameManager {
 
+    private final Object lock = new Object();
+
     public static String worldLobbyName;
     public static String worldArenaName;
     public static String netherArenaName;
@@ -177,7 +179,9 @@ public class GameManager {
     }
 
     public void addPlayingPlayer(UUID playerId) {
-        playingPlayers.add(playerId);
+        synchronized (lock) {
+            playingPlayers.add(playerId);
+        }
     }
 
     public void removePlayingPlayer(UUID playerId) {
@@ -185,11 +189,15 @@ public class GameManager {
     }
 
     public Set<UUID> getPlayingPlayers() {
-        return playingPlayers;
+        synchronized (lock) {
+            return playingPlayers;
+        }
     }
 
     public boolean containsPlayingPlayer(UUID playerId) {
-        return playingPlayers.contains(playerId);
+        synchronized (lock) {
+            return playingPlayers.contains(playerId);
+        }
     }
 
     public void addVotedForStartPlayer(UUID playerId) {
@@ -368,9 +376,6 @@ public class GameManager {
 
         // Выдаём предметы, которые нужны для плагина
         setPluginItems(player);
-
-        // Приветствуем игрока
-        player.sendMessage(ChatColor.GREEN + "" + ChatColor.BOLD + "Добро пожаловать в лобби " + ChatColor.UNDERLINE + "Battle Royale!");
     }
 
     /**
@@ -382,6 +387,7 @@ public class GameManager {
         ItemStack teamSelector = new ItemStack(Material.COMPASS, 1);
         ItemMeta teamMeta = teamSelector.getItemMeta();
         if (teamMeta != null) {
+            teamMeta.setMaxStackSize(99);
             teamMeta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + "Выбор команды");
             teamMeta.setLore(Collections.singletonList(ChatColor.YELLOW + "Нажмите ПКМ, чтобы выбрать команду"));
             teamSelector.setItemMeta(teamMeta);
@@ -391,6 +397,7 @@ public class GameManager {
         ItemStack statsItem = new ItemStack(Material.PAPER, 1);
         ItemMeta statsMeta = statsItem.getItemMeta();
         if (statsMeta != null) {
+            statsMeta.setMaxStackSize(99);
             statsMeta.setDisplayName(ChatColor.AQUA + "" + ChatColor.BOLD + "Статистика");
             statsMeta.setLore(Collections.singletonList(ChatColor.YELLOW + "Нажмите ПКМ, чтобы посмотреть статистику"));
             statsItem.setItemMeta(statsMeta);
@@ -400,6 +407,7 @@ public class GameManager {
         ItemStack voteStartItem = new ItemStack(Material.AMETHYST_SHARD, 1);
         ItemMeta voteMeta = voteStartItem.getItemMeta();
         if (voteMeta != null) {
+            voteMeta.setMaxStackSize(99);
             voteMeta.setDisplayName(ChatColor.GOLD + "" + ChatColor.BOLD + "Голосовать за старт");
             voteMeta.setLore(Collections.singletonList(ChatColor.YELLOW + "Нажмите ПКМ, чтобы проголосовать за старт игры"));
             voteStartItem.setItemMeta(voteMeta);
@@ -409,6 +417,7 @@ public class GameManager {
         ItemStack chooseKitItem = new ItemStack(Material.CHEST, 1);
         ItemMeta chooseKitMeta = chooseKitItem.getItemMeta();
         if (chooseKitMeta != null) {
+            chooseKitMeta.setMaxStackSize(99);
             chooseKitMeta.setDisplayName(ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + "Выбрать кит");
             chooseKitMeta.setLore(Collections.singletonList(ChatColor.YELLOW + "Нажмите ПКМ, чтобы выбрать кит"));
             chooseKitItem.setItemMeta(chooseKitMeta);
@@ -572,6 +581,8 @@ public class GameManager {
      * Останавливаем игру
      */
     public void endGame() {
+        gameWinning = true;
+
         // Останавливаем все барьеры
         stopAllWorldBorders();
 
@@ -727,7 +738,6 @@ public class GameManager {
             arenaWorld.setGameRule(GameRule.SPAWN_RADIUS, 0);
             arenaWorld.setSpawnFlags(true, true);
             arenaWorld.setAutoSave(false);
-            arenaWorld.save();
         }
         arenaWorld = Bukkit.getWorld(worldArenaName);
     }
@@ -744,7 +754,6 @@ public class GameManager {
             netherWorld.setGameRule(GameRule.SPAWN_CHUNK_RADIUS, 0);
             netherWorld.setGameRule(GameRule.SPAWN_RADIUS, 0);
             netherWorld.setAutoSave(false);
-            netherWorld.save();
         }
         netherWorld = Bukkit.getWorld(netherArenaName);
     }
@@ -761,7 +770,6 @@ public class GameManager {
             endWorld.setGameRule(GameRule.SPAWN_CHUNK_RADIUS, 0);
             endWorld.setGameRule(GameRule.SPAWN_RADIUS, 0);
             endWorld.setAutoSave(false);
-            endWorld.save();
         }
         endWorld = Bukkit.getWorld(endArenaName);
     }
@@ -775,7 +783,7 @@ public class GameManager {
         double borderSize  = border.getSize();
         double centerX     = arenaWorld.getSpawnLocation().getX();
         double centerZ     = arenaWorld.getSpawnLocation().getZ();
-        double radius      = (borderSize / 2) - 20; // отступ от границы
+        double radius      = (borderSize / 2) - 20; // отступ от границы мира
 
         // Самая большая высота мира
         final int maxY = 256;
@@ -818,8 +826,15 @@ public class GameManager {
 
         // Генерируем случайные точки для каждой команды
         for (String team : availableTeams.keySet()) {
-            double randomX = centerX + (random.nextGaussian() * radius * 2 - radius);
-            double randomZ = centerZ + (random.nextGaussian() * radius * 2 - radius);
+            // Равномерное распределение, при этом строго [0; 1]
+            double generatedRandom1 = Math.max(Math.min(random.nextGaussian(0.5, 0.15), 1), 0);
+            double generatedRandom2 = Math.max(Math.min(random.nextGaussian(0.5, 0.15), 1), 0);
+
+            // Вычисляем координаты
+            double randomX = centerX + (generatedRandom1 * radius * 2 - radius);
+            double randomZ = centerZ + (generatedRandom2 * radius * 2 - radius);
+
+            // Запоминаем местоположение
             Location teamSpawnLocation = new Location(arenaWorld, randomX, maxY, randomZ);
             teamSpawnLocations.put(team, teamSpawnLocation);
         }
@@ -1123,11 +1138,13 @@ public class GameManager {
         waitingPlayers.forEach(this::preparePlayer);
 
         // Удаляем всех игроков из играющих
-        playingPlayers.forEach(this::removePlayingPlayer);
+        synchronized (lock) {
+            playingPlayers.clear();
+        }
 
         // Очищаем голосования игроков
-        waitingPlayers.forEach(this::removeVotedForStartPlayer);
-        waitingPlayers.forEach(this::removeVotedForEndPlayer);
+        votedForStartingPlayers.clear();
+        votedForEndingPlayers.clear();
     }
 
     /**

@@ -4,11 +4,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Material;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Damageable;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemRarity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -53,16 +53,31 @@ public class KitManager {
         ));
 
         // Набор "Танк"
+        ItemStack potionTurtlePower = createItem(Material.SPLASH_POTION, ChatColor.DARK_AQUA + "Зелье Танка", 1);
+        PotionMeta potionTurtlePowerMeta = (PotionMeta)potionTurtlePower.getItemMeta();
+        PotionEffect potionTurtlePowerEffect1 = new PotionEffect(PotionEffectType.RESISTANCE, 20 * 20, 2, false, true);
+        PotionEffect potionTurtlePowerEffect2 = new PotionEffect(PotionEffectType.SLOWNESS, 20 * 20, 3, false, true);
+        if (potionTurtlePowerMeta != null) {
+            potionTurtlePowerMeta.setColor(Color.WHITE);
+            potionTurtlePowerMeta.addCustomEffect(potionTurtlePowerEffect1, false);
+            potionTurtlePowerMeta.addCustomEffect(potionTurtlePowerEffect2, false);
+            potionTurtlePower.setItemMeta(potionTurtlePowerMeta);
+        }
+        ItemStack leatherChestplate = createItem(Material.LEATHER_CHESTPLATE, ChatColor.BLUE + "Броня Танка");
+        leatherChestplate.addEnchantment(Enchantment.PROTECTION, 4);
         kits.put("Танк", Arrays.asList(
-                createItem(Material.LEATHER_CHESTPLATE, ChatColor.BLUE + "Броня Танка"),
-                createItem(Material.SHIELD, ChatColor.BLUE + "Щит Танка")
+                createItem(Material.SHIELD, ChatColor.BLUE + "Щит Танка"),
+                leatherChestplate,
+                potionTurtlePower
         ));
 
         // Набор "Инженер"
         kits.put("Инженер", Arrays.asList(
                 createItem(Material.PISTON, ChatColor.GREEN + "Поршень Инженера", 4),
                 createItem(Material.STICKY_PISTON, ChatColor.GREEN + "Липкий поршень Инженера", 4),
-                createItem(Material.SLIME_BLOCK, ChatColor.GREEN + "Блоки слизи Инженера", 4)
+                createItem(Material.SLIME_BLOCK, ChatColor.GREEN + "Блоки слизи Инженера", 4),
+                createItem(Material.HONEY_BLOCK, ChatColor.GREEN + "Блоки мёда Инженера", 4),
+                createItem(Material.OBSERVER, ChatColor.GREEN + "Наблюдатель Инженера", 4)
         ));
 
         // Набор "Работяга"
@@ -82,22 +97,102 @@ public class KitManager {
 
         // Набор "Рико"
         kits.put("Рико", Arrays.asList(
-                createItem(Material.TNT, ChatColor.DARK_RED + "TnT Рико", 1),
+                createItem(Material.TNT, ChatColor.DARK_RED + "TnT Рико", 5),
                 createItem(Material.FLINT_AND_STEEL, ChatColor.DARK_RED + "Зажигалка Рико", 1)
         ));
 
         // Набор "Химик"
-        ItemStack potion = createItem(Material.SPLASH_POTION, ChatColor.DARK_AQUA + "Зелье Химика", 1);
-        PotionMeta potionMeta = (PotionMeta)potion.getItemMeta();
-        PotionEffect potionEffect = new PotionEffect(PotionEffectType.SPEED, 8 * 60 * 20, 1, false, true);
-        if (potionMeta != null) {
-            potionMeta.setColor(Color.WHITE);
-            potionMeta.addCustomEffect(potionEffect, false);
-            potion.setItemMeta(potionMeta);
+        ItemStack potionSpeed = createItem(Material.SPLASH_POTION, ChatColor.DARK_AQUA + "Зелье Химика", 1);
+        PotionMeta potionSpeedMeta = (PotionMeta)potionSpeed.getItemMeta();
+        PotionEffect potionSpeedEffect = new PotionEffect(PotionEffectType.SPEED, 8 * 60 * 20, 1, false, true);
+        if (potionSpeedMeta != null) {
+            potionSpeedMeta.setColor(Color.WHITE);
+            potionSpeedMeta.addCustomEffect(potionSpeedEffect, false);
+            potionSpeed.setItemMeta(potionSpeedMeta);
         }
         kits.put("Химик", Arrays.asList(
-                potion,
+                potionSpeed,
                 createItem(Material.GLASS_BOTTLE, ChatColor.DARK_AQUA + "Бутылочка Химика", 3)
+        ));
+
+        // Набор "Инджрих"
+        ItemStack mace = createItem(Material.MACE, ChatColor.DARK_PURPLE + "Булава Инджриха", 1);
+        mace.setDurability((short)499);
+        kits.put("Инджрих", Arrays.asList(
+                mace,
+                createItem(Material.WIND_CHARGE, ChatColor.DARK_PURPLE + "Заряд ветра Инджриха", 5)
+        ));
+
+        // Набор "Антонио"
+        ItemStack woodenHoe = createItem(Material.WOODEN_HOE, ChatColor.DARK_BLUE + "Деревянная мотыга из сейфа Антонио", 3);
+        woodenHoe.addEnchantment(Enchantment.FORTUNE, 1);
+        kits.put("Антонио", Arrays.asList(
+                createItem(Material.CARROT, ChatColor.DARK_BLUE + "Морковки из сейфа Антонио", 8),
+                createItem(Material.BONE_MEAL, ChatColor.DARK_BLUE + "Костная мука из сейфа Антонио", 3),
+                woodenHoe
+        ));
+
+        // Набор "Обманка"
+        ItemStack woodenPickaxe = createItem(Material.WOODEN_PICKAXE, ChatColor.RED + "Деревянная кирка-обманка", 1);
+        woodenPickaxe.addEnchantment(Enchantment.SILK_TOUCH, 1);
+        kits.put("Обманка", Arrays.asList(
+                createItem(Material.ENDER_CHEST, ChatColor.RED + "Эндер-сундук-обманка", 1),
+                woodenPickaxe
+        ));
+
+        // Набор "Дрессировщик"
+        kits.put("Дрессировщик", Arrays.asList(
+                createItem(Material.LEAD, ChatColor.YELLOW + "Поводок Дрессировщика", 1),
+                createItem(Material.CAT_SPAWN_EGG, ChatColor.YELLOW + "Яйцо спавна кошки Дрессировщика", 4),
+                createItem(Material.WOLF_SPAWN_EGG, ChatColor.YELLOW + "Яйцо спавна волка Дрессировщика", 4),
+                createItem(Material.IRON_GOLEM_SPAWN_EGG, ChatColor.YELLOW + "Яйцо спавна железного голема Дрессировщика", 1)
+        ));
+
+        // Набор "Музыкант"
+        kits.put("Музыкант", Arrays.asList(
+                createItem(Material.JUKEBOX,        ChatColor.BLUE + "Бумбокс Музыканта", 1),
+                createItem(Material.MUSIC_DISC_5,   ChatColor.BLUE + "Музыкальная пластинка Музыканта", 1),
+                createItem(Material.MUSIC_DISC_11,  ChatColor.BLUE + "Музыкальная пластинка Музыканта", 1),
+                createItem(Material.MUSIC_DISC_13,  ChatColor.BLUE + "Музыкальная пластинка Музыканта", 1),
+                createItem(Material.MUSIC_DISC_CAT, ChatColor.BLUE + "Музыкальная пластинка Музыканта", 1)
+        ));
+
+        // Набор "Король"
+        ItemStack kingHelmet     = createItem(Material.GOLDEN_HELMET,     ChatColor.GOLD + "Корона Короля",    1);
+        kingHelmet.addEnchantment(Enchantment.BINDING_CURSE, 1);
+        kingHelmet.addEnchantment(Enchantment.UNBREAKING,    3);
+
+        ItemStack kingChestplate = createItem(Material.GOLDEN_CHESTPLATE, ChatColor.GOLD + "Нагрудник Короля", 1);
+        kingChestplate.addEnchantment(Enchantment.BINDING_CURSE, 1);
+        kingChestplate.addEnchantment(Enchantment.UNBREAKING,    3);
+
+        ItemStack kingLeggins    = createItem(Material.GOLDEN_LEGGINGS,   ChatColor.GOLD + "Поножи Короля",    1);
+        kingLeggins.addEnchantment(Enchantment.BINDING_CURSE, 1);
+        kingLeggins.addEnchantment(Enchantment.UNBREAKING,    3);
+
+        ItemStack kingBoots      = createItem(Material.GOLDEN_BOOTS,      ChatColor.GOLD + "Ботинки Короля",   1);
+        kingBoots.addEnchantment(Enchantment.BINDING_CURSE, 1);
+        kingBoots.addEnchantment(Enchantment.UNBREAKING,    3);
+
+        kits.put("Король", Arrays.asList(
+                createItem(Material.GOLD_INGOT, ChatColor.GOLD + "Золотой слиток Короля", 1),
+                kingHelmet,
+                kingChestplate,
+                kingLeggins,
+                kingBoots
+        ));
+
+        // Набор "Землекоп"
+        ItemStack dirt = createItem(Material.DIRT, ChatColor.GREEN + "Земля Землекопа", 1);
+        ItemMeta dirtMeta = dirt.getItemMeta();
+        if (dirtMeta != null) {
+            dirtMeta.setRarity(ItemRarity.EPIC);
+            dirtMeta.addEnchant(Enchantment.KNOCKBACK, 5, true);
+            dirt.setItemMeta(dirtMeta);
+        }
+        kits.put("Землекоп", Arrays.asList(
+                createItem(Material.DIAMOND_SHOVEL, ChatColor.GREEN + "Лопата Землекопа", 1),
+                dirt
         ));
     }
 

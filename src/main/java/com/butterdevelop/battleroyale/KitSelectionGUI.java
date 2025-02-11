@@ -2,6 +2,7 @@ package com.butterdevelop.battleroyale;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -19,12 +20,15 @@ public class KitSelectionGUI implements Listener {
 
     public static KitManager kitManager;
 
+    public static final int INVENTORY_INITIAL_SLOTS_AMOUNT = 18;
+
     public KitSelectionGUI(BattleRoyalePlugin plugin) {
         kitManager = new KitManager(plugin);
     }
 
     public static void openKitSelection(Player player) {
-        Inventory inventory = Bukkit.createInventory(null, 9, ChatColor.DARK_GRAY + "" + ChatColor.BOLD + "Выбор набора");
+        Inventory inventory = Bukkit.createInventory(null, INVENTORY_INITIAL_SLOTS_AMOUNT,
+                ChatColor.DARK_GRAY + "" + ChatColor.BOLD + "Выбор набора");
 
         int index = 0;
         for (String kitName : kitManager.getAvailableKits().keySet()) {
@@ -49,7 +53,7 @@ public class KitSelectionGUI implements Listener {
                 lore.add(ChatColor.GRAY + "" + ChatColor.BOLD + "Предметы набора:");
                 kitItems.forEach(item -> {
                     if (item.getItemMeta() != null) {
-                        lore.add(ChatColor.GRAY + item.getItemMeta().getDisplayName());
+                        lore.add(ChatColor.GRAY + item.getItemMeta().getDisplayName() + " (x" + item.getAmount() + ")");
                     }
                 });
 
@@ -62,6 +66,19 @@ public class KitSelectionGUI implements Listener {
             inventory.setItem(index++, kitItem);
         }
 
+        // Пропуск предметов для красоты
+        for (int i = 0; i < INVENTORY_INITIAL_SLOTS_AMOUNT - index; i++) {
+            ItemStack template = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+            ItemMeta meta = template.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(" ");
+                meta.setMaxStackSize(1);
+                template.setItemMeta(meta);
+            }
+            inventory.addItem(template);
+        }
+
+        // Открываем интерфейс
         player.openInventory(inventory);
     }
 

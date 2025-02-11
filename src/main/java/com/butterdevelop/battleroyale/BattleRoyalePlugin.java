@@ -24,6 +24,7 @@ public class BattleRoyalePlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new TeamSelectionListener(gameManager), this);
         getServer().getPluginManager().registerEvents(new KitSelectionGUI(this), this);
         getServer().getPluginManager().registerEvents(new PluginItemsListener(), this);
+        getServer().getPluginManager().registerEvents(new PlayerInteractListener(), this);
 
         // Регистрируем команды
         Objects.requireNonNull(getCommand("startgame")).setExecutor(new StartGameCommand(this));
