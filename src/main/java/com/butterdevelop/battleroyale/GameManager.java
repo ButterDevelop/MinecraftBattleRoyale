@@ -2,6 +2,8 @@ package com.butterdevelop.battleroyale;
 
 import org.bukkit.*;
 import org.bukkit.WorldBorder;
+import org.bukkit.advancement.Advancement;
+import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
@@ -494,6 +496,9 @@ public class GameManager {
                 // Назначаем командам игроков, у которых её нет
                 assignPlayersToTeams();
 
+                // Чистим все достижения игрокам, чтобы они появлялись снова
+                revokeAllAdvancements();
+
                 // Телепортируем команды на арену
                 teleportTeamsToArena();
 
@@ -775,15 +780,36 @@ public class GameManager {
     }
 
     /**
+     * Забираем все достижения, чтобы они отображались во время игры
+     */
+    private void revokeAllAdvancements() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Iterator<Advancement> iterator = Bukkit.getServer().advancementIterator();
+
+            while (iterator.hasNext()) {
+                Advancement advancement = iterator.next();
+                AdvancementProgress progress = player.getAdvancementProgress(advancement);
+
+                for (String criteria : progress.getAwardedCriteria()) {
+                    progress.revokeCriteria(criteria);
+                }
+            }
+        }
+    }
+
+    /**
      * Равномерно распределяет команды по территории арены.
      */
     private void teleportTeamsToArena() {
-        Random random      = new Random();
-        WorldBorder border = arenaWorld.getWorldBorder();
-        double borderSize  = border.getSize();
-        double centerX     = arenaWorld.getSpawnLocation().getX();
-        double centerZ     = arenaWorld.getSpawnLocation().getZ();
-        double radius      = (borderSize / 2) - 20; // отступ от границы мира
+        Random random             = new Random();
+        WorldBorder border        = arenaWorld.getWorldBorder();
+        double borderSize         = border.getSize();
+        double centerX            = arenaWorld.getSpawnLocation().getX();
+        double centerZ            = arenaWorld.getSpawnLocation().getZ();
+        double maxAvailableRadius = (borderSize / 2) - 20; // отступ от границы мира
+
+        // Используйте часть доступного радиуса, чтобы гарантировать, что точки появления не будут слишком близко к границе.
+        double spawnCircleRadius = maxAvailableRadius * 0.7;
 
         // Самая большая высота мира
         final int maxY = 256;
@@ -821,22 +847,26 @@ public class GameManager {
             return;
         }
 
-        // Карта для хранения случайных позиций для каждой команды
+        // Создайте карту для хранения мест появления каждой команды.
         Map<String, Location> teamSpawnLocations = new HashMap<>();
+        int teamCount = availableTeams.size();
+        // Создайте случайное угловое смещение, чтобы немного изменить общую компоновку.
+        double angleOffset = random.nextDouble() * 2 * Math.PI;
 
-        // Генерируем случайные точки для каждой команды
+        int index = 0;
         for (String team : availableTeams.keySet()) {
-            // Равномерное распределение, при этом строго [0; 1]
-            double generatedRandom1 = Math.max(Math.min(random.nextGaussian(0.5, 0.15), 1), 0);
-            double generatedRandom2 = Math.max(Math.min(random.nextGaussian(0.5, 0.15), 1), 0);
+            // Равномерно распределите команды по углам.
+            double theta = angleOffset + (2 * Math.PI * index / teamCount);
+            // Добавьте небольшое случайное радиальное отклонение от 0,9 до 1,1.
+            double radialVariation = 0.9 + 0.2 * random.nextDouble();
+            double teamRadius = spawnCircleRadius * radialVariation;
 
-            // Вычисляем координаты
-            double randomX = centerX + (generatedRandom1 * radius * 2 - radius);
-            double randomZ = centerZ + (generatedRandom2 * radius * 2 - radius);
+            double randomX = centerX + teamRadius * Math.cos(theta);
+            double randomZ = centerZ + teamRadius * Math.sin(theta);
 
-            // Запоминаем местоположение
             Location teamSpawnLocation = new Location(arenaWorld, randomX, maxY, randomZ);
             teamSpawnLocations.put(team, teamSpawnLocation);
+            index++;
         }
 
         // Телепортируем игроков в их командные точки
