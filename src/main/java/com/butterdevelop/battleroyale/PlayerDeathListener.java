@@ -7,6 +7,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 /**
@@ -38,8 +40,10 @@ public class PlayerDeathListener implements Listener {
             return;
         }
 
-        // Эффект молнии бьёт на месте смерти игрока
-        player.getWorld().strikeLightningEffect(player.getLocation());
+        // Эффект молнии бьёт на месте смерти игрока, если он был частью игры
+        if (plugin.getGameManager().containsPlayingPlayer(player.getUniqueId())) {
+            player.getWorld().strikeLightningEffect(player.getLocation());
+        }
 
         // Удаляем все эндерпёрлы игрока
         player.getEnderPearls().forEach(Entity::remove);
@@ -69,8 +73,14 @@ public class PlayerDeathListener implements Listener {
                 // Сразу же возрождаем игрока
                 event.getEntity().spigot().respawn();
 
+                // Даём эффект ночного зрения, невидимости и неуязвимости игроку для удобства
+                PotionEffect nightVisionPotionEffect = new PotionEffect(PotionEffectType.NIGHT_VISION, PotionEffect.INFINITE_DURATION,
+                        Integer.MAX_VALUE, false, false);
+                player.addPotionEffect(nightVisionPotionEffect);
+
                 // Кидаем его в режим наблюдателя
                 player.setGameMode(GameMode.SPECTATOR);
+
                 player.sendMessage(ChatColor.RED + "Вы погибли. Теперь вы в режиме наблюдателя.");
             }
         }.runTaskLater(plugin, 15L);

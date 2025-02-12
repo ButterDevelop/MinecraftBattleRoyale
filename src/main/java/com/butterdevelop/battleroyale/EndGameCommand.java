@@ -45,7 +45,7 @@ public class EndGameCommand implements CommandExecutor {
         plugin.getGameManager().endGame();
 
         // Уведомляем пользователя
-        sender.sendMessage(ChatColor.GREEN + "Игра остановлена!");
+        Bukkit.broadcastMessage(ChatColor.GREEN + "Игра остановлена!");
 
         return true;
     }

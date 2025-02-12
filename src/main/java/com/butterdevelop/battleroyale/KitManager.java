@@ -20,6 +20,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Менеджер кит-наборов, которые выдаются пользователю при начале игры
+ */
 public class KitManager {
 
     private final File              kitsFile;
@@ -43,22 +46,31 @@ public class KitManager {
         // Набор "Воин"
         kits.put("Воин", Arrays.asList(
                 createItem(Material.IRON_SWORD, ChatColor.RED + "Меч Воина"),
-                createItem(Material.LEATHER_HELMET, ChatColor.RED + "Шлем Воина")
+                createItem(Material.LEATHER_HELMET, ChatColor.RED + "Шлем Воина"),
+                createItem(Material.LEATHER_CHESTPLATE, ChatColor.RED + "Нагрудник Воина")
         ));
 
         // Набор "Лучник"
+        ItemStack    levitationArrows     = createItem(Material.TIPPED_ARROW, ChatColor.YELLOW + "Стрелы левитации Лучника", 16);
+        PotionEffect levitationEffect     = new PotionEffect(PotionEffectType.LEVITATION, 20, 1, true, true);
+        PotionMeta   levitationArrowsMeta = (PotionMeta)levitationArrows.getItemMeta();
+        if (levitationArrowsMeta != null) {
+            levitationArrowsMeta.setColor(Color.WHITE);
+            levitationArrowsMeta.addCustomEffect(levitationEffect, false);
+            levitationArrows.setItemMeta(levitationArrowsMeta);
+        }
         kits.put("Лучник", Arrays.asList(
                 createItem(Material.BOW, ChatColor.YELLOW + "Лук Лучника"),
-                createItem(Material.ARROW, ChatColor.YELLOW + "Стрелы", 16)
+                levitationArrows
         ));
 
         // Набор "Танк"
-        ItemStack potionTurtlePower = createItem(Material.SPLASH_POTION, ChatColor.DARK_AQUA + "Зелье Танка", 1);
+        ItemStack potionTurtlePower = createItem(Material.SPLASH_POTION, ChatColor.BLUE + "Зелье черепашьей мощи Танка", 1);
         PotionMeta potionTurtlePowerMeta = (PotionMeta)potionTurtlePower.getItemMeta();
-        PotionEffect potionTurtlePowerEffect1 = new PotionEffect(PotionEffectType.RESISTANCE, 20 * 20, 2, false, true);
-        PotionEffect potionTurtlePowerEffect2 = new PotionEffect(PotionEffectType.SLOWNESS, 20 * 20, 3, false, true);
+        PotionEffect potionTurtlePowerEffect1 = new PotionEffect(PotionEffectType.RESISTANCE, 20 * 20, 2, true, true);
+        PotionEffect potionTurtlePowerEffect2 = new PotionEffect(PotionEffectType.SLOWNESS, 20 * 20, 3, true, true);
         if (potionTurtlePowerMeta != null) {
-            potionTurtlePowerMeta.setColor(Color.WHITE);
+            potionTurtlePowerMeta.setColor(Color.BLUE);
             potionTurtlePowerMeta.addCustomEffect(potionTurtlePowerEffect1, false);
             potionTurtlePowerMeta.addCustomEffect(potionTurtlePowerEffect2, false);
             potionTurtlePower.setItemMeta(potionTurtlePowerMeta);
@@ -102,9 +114,9 @@ public class KitManager {
         ));
 
         // Набор "Химик"
-        ItemStack potionSpeed = createItem(Material.SPLASH_POTION, ChatColor.DARK_AQUA + "Зелье Химика", 1);
+        ItemStack potionSpeed = createItem(Material.SPLASH_POTION, ChatColor.DARK_AQUA + "Зелье скорости Химика", 1);
         PotionMeta potionSpeedMeta = (PotionMeta)potionSpeed.getItemMeta();
-        PotionEffect potionSpeedEffect = new PotionEffect(PotionEffectType.SPEED, 8 * 60 * 20, 1, false, true);
+        PotionEffect potionSpeedEffect = new PotionEffect(PotionEffectType.SPEED, 8 * 60 * 20, 1, true, true);
         if (potionSpeedMeta != null) {
             potionSpeedMeta.setColor(Color.WHITE);
             potionSpeedMeta.addCustomEffect(potionSpeedEffect, false);
@@ -112,23 +124,32 @@ public class KitManager {
         }
         kits.put("Химик", Arrays.asList(
                 potionSpeed,
-                createItem(Material.GLASS_BOTTLE, ChatColor.DARK_AQUA + "Бутылочка Химика", 3)
+                createItem(Material.BREWING_STAND, ChatColor.DARK_AQUA + "Зельеварка Химика", 1)
         ));
 
         // Набор "Инджрих"
         ItemStack mace = createItem(Material.MACE, ChatColor.DARK_PURPLE + "Булава Инджриха", 1);
         mace.setDurability((short)499);
+        ItemStack potionJump = createItem(Material.SPLASH_POTION, ChatColor.DARK_PURPLE + "Зелье прыгучести Инджриха", 1);
+        PotionMeta potionJumpMeta = (PotionMeta)potionJump.getItemMeta();
+        PotionEffect potionJumpEffect = new PotionEffect(PotionEffectType.JUMP_BOOST, 2 * 20, 9, true, true);
+        if (potionJumpMeta != null) {
+            potionJumpMeta.setColor(Color.LIME);
+            potionJumpMeta.addCustomEffect(potionJumpEffect, false);
+            potionJump.setItemMeta(potionJumpMeta);
+        }
         kits.put("Инджрих", Arrays.asList(
                 mace,
-                createItem(Material.WIND_CHARGE, ChatColor.DARK_PURPLE + "Заряд ветра Инджриха", 5)
+                createItem(Material.WIND_CHARGE, ChatColor.DARK_PURPLE + "Заряд ветра Инджриха", 5),
+                potionJump
         ));
 
         // Набор "Антонио"
-        ItemStack woodenHoe = createItem(Material.WOODEN_HOE, ChatColor.DARK_BLUE + "Деревянная мотыга из сейфа Антонио", 3);
+        ItemStack woodenHoe = createItem(Material.WOODEN_HOE, ChatColor.YELLOW + "Деревянная мотыга из сейфа Антонио", 3);
         woodenHoe.addEnchantment(Enchantment.FORTUNE, 1);
         kits.put("Антонио", Arrays.asList(
-                createItem(Material.CARROT, ChatColor.DARK_BLUE + "Морковки из сейфа Антонио", 8),
-                createItem(Material.BONE_MEAL, ChatColor.DARK_BLUE + "Костная мука из сейфа Антонио", 3),
+                createItem(Material.CARROT, ChatColor.YELLOW + "Морковки из сейфа Антонио", 8),
+                createItem(Material.BONE_MEAL, ChatColor.YELLOW + "Костная мука из сейфа Антонио", 3),
                 woodenHoe
         ));
 
@@ -143,9 +164,9 @@ public class KitManager {
         // Набор "Дрессировщик"
         kits.put("Дрессировщик", Arrays.asList(
                 createItem(Material.LEAD, ChatColor.YELLOW + "Поводок Дрессировщика", 1),
-                createItem(Material.CAT_SPAWN_EGG, ChatColor.YELLOW + "Яйцо спавна кошки Дрессировщика", 4),
-                createItem(Material.WOLF_SPAWN_EGG, ChatColor.YELLOW + "Яйцо спавна волка Дрессировщика", 4),
-                createItem(Material.IRON_GOLEM_SPAWN_EGG, ChatColor.YELLOW + "Яйцо спавна железного голема Дрессировщика", 1)
+                createItem(Material.CAT_SPAWN_EGG, ChatColor.YELLOW + "Кошка Дрессировщика", 4),
+                createItem(Material.WOLF_SPAWN_EGG, ChatColor.YELLOW + "Волк Дрессировщика", 4),
+                createItem(Material.IRON_GOLEM_SPAWN_EGG, ChatColor.YELLOW + "Железный голем Дрессировщика", 1)
         ));
 
         // Набор "Музыкант"
@@ -193,6 +214,34 @@ public class KitManager {
         kits.put("Землекоп", Arrays.asList(
                 createItem(Material.DIAMOND_SHOVEL, ChatColor.GREEN + "Лопата Землекопа", 1),
                 dirt
+        ));
+
+        // Набор "MLG"
+        ItemStack potionLevitation = createItem(Material.SPLASH_POTION, ChatColor.DARK_PURPLE + "Зелье левитации MLG", 1);
+        PotionMeta potionLevitationMeta = (PotionMeta)potionLevitation.getItemMeta();
+        PotionEffect potionLevitationEffect = new PotionEffect(PotionEffectType.LEVITATION, 30 * 20, 1, true, true);
+        if (potionLevitationMeta != null) {
+            potionLevitationMeta.setColor(Color.WHITE);
+            potionLevitationMeta.addCustomEffect(potionLevitationEffect, false);
+            potionLevitation.setItemMeta(potionLevitationMeta);
+        }
+        kits.put("MLG", Arrays.asList(
+                createItem(Material.WATER_BUCKET, ChatColor.DARK_PURPLE + "Ведро воды MLG", 1),
+                potionLevitation
+        ));
+
+        // Набор "Бизнесмен"
+        kits.put("Бизнесмен", Arrays.asList(
+                createItem(Material.EMERALD, ChatColor.YELLOW + "TonCoin Бизнесмена", 16),
+                createItem(Material.VILLAGER_SPAWN_EGG, ChatColor.YELLOW + "Крестьянин Бизнесмена", 2)
+        ));
+
+        // Набор "Всадник"
+        kits.put("Всадник", Arrays.asList(
+                createItem(Material.SADDLE, ChatColor.RED + "Седло Всадника", 1),
+                createItem(Material.HORSE_SPAWN_EGG, ChatColor.RED + "Лошадь Всадника", 1),
+                createItem(Material.LEATHER_HORSE_ARMOR, ChatColor.RED + "Кожаная конская броня Всадника", 1),
+                createItem(Material.WHEAT, ChatColor.RED + "Пшеница Всадника", 16)
         ));
     }
 
@@ -283,7 +332,8 @@ public class KitManager {
         selectedKits.remove(player.getUniqueId());
         kitsConfig.set("players." + player.getUniqueId(), null);
         saveKitsFile();
-        player.sendMessage(ChatColor.GREEN + "Вы убрали свой кит-набор.");
+        player.sendMessage(ChatColor.GREEN + "Вы " + ChatColor.YELLOW + ChatColor.BOLD + "убрали" + ChatColor.GREEN +
+                " свой " + ChatColor.BOLD + "кит-набор" + ChatColor.GREEN + ".");
     }
 
     /**

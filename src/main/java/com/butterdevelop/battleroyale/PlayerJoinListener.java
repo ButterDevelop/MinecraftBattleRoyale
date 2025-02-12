@@ -6,10 +6,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.*;
 
 /**
  * При входе игрока:
@@ -78,14 +75,30 @@ public class PlayerJoinListener implements Listener {
     }
 
     /**
+     * Если пользователя кикнул сервер, в принципе, это то же самое, что и при его выходе
+     * @param event Событие кика игрока
+     */
+    @EventHandler
+    public void onPlayerKick(PlayerKickEvent event) {
+        final Player player = event.getPlayer();
+        playerLeaves(player);
+    }
+
+    /**
      * Выполняем действия при выходе игрока с сервера
      * @param event Событие выхода игрока с сервера
      */
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        // Определяем игрока
         final Player player = event.getPlayer();
+        playerLeaves(player);
+    }
 
+    /**
+     * Отдельная функция, обрабатывающая, что игрока нет на сервере
+     * @param player Игрок
+     */
+    public void playerLeaves(final Player player) {
         // Если мы не на арене, то выходим
         String worldName = player.getWorld().getName();
         if (worldName.equals(GameManager.worldLobbyName) || (
@@ -95,7 +108,7 @@ public class PlayerJoinListener implements Listener {
             return;
         }
 
-        // Эффект молнии бьёт на месте смерти игрока, если он был жив
+        // Эффект молнии бьёт на месте смерти игрока, если он был частью игры
         if (plugin.getGameManager().containsPlayingPlayer(player.getUniqueId())) {
             player.getWorld().strikeLightningEffect(player.getLocation());
         }

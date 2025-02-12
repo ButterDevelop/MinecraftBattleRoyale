@@ -1,13 +1,18 @@
 package com.butterdevelop.battleroyale;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.HashMap;
 import java.util.Objects;
+import java.util.UUID;
 
 public class BattleRoyalePlugin extends JavaPlugin {
 
     private GameManager gameManager;
+    private HashMap<UUID, PermissionAttachment> permissions;
 
     @Override
     public void onEnable() {
@@ -16,6 +21,9 @@ public class BattleRoyalePlugin extends JavaPlugin {
 
         // Инициализируем менеджер игры
         gameManager = new GameManager(this);
+
+        // Инициализируем разрешения
+        permissions = new HashMap<>();
 
         // Регистрируем слушателей событий
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
@@ -47,10 +55,25 @@ public class BattleRoyalePlugin extends JavaPlugin {
         if (gameManager != null) {
             gameManager.shutdown();
         }
+        if (permissions != null) {
+            permissions.clear();
+        }
         getLogger().info("BattleRoyalePlugin выключён!");
     }
 
     public GameManager getGameManager() {
         return gameManager;
+    }
+
+    public void setPermission(Player player, String permission, boolean value) {
+        if (!this.isEnabled()) {
+            return;
+        }
+
+        PermissionAttachment attachment = player.addAttachment(this);
+        permissions.put(player.getUniqueId(), attachment);
+
+        PermissionAttachment playerPerms = permissions.get(player.getUniqueId());
+        playerPerms.setPermission(permission, value);
     }
 }

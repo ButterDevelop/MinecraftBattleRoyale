@@ -11,7 +11,7 @@ border:
   shrinkToZeroSeconds: 60
 
 arena:
-  secondsBeforeArena: 60
+  secondsBeforeArena: 30
   secondsAfterArena: 60
 
 teams:

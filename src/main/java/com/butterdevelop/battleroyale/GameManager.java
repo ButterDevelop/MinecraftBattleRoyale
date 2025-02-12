@@ -16,7 +16,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
@@ -43,7 +43,7 @@ public class GameManager {
     private static int    secondsBeforeArena;
     private static int    secondsAfterArena;
 
-    private final JavaPlugin plugin;
+    private final BattleRoyalePlugin plugin;
 
     private final Set<UUID> waitingPlayers;
     private final Set<UUID> playingPlayers;
@@ -69,6 +69,9 @@ public class GameManager {
     // Доступные команды, созданные в Scoreboard
     private final Map<String, TeamInfo> availableTeams = new HashMap<>();
 
+    // Поле для хранения подготовленных координат появления команд
+    private Map<String, Location> teamSpawnLocations = new HashMap<>();
+
     private boolean gameStarted = false;
     private boolean gameWinning = false;
 
@@ -76,7 +79,7 @@ public class GameManager {
     private World netherWorld;
     private World endWorld;
 
-    public GameManager(JavaPlugin plugin) {
+    public GameManager(BattleRoyalePlugin plugin) {
         this.plugin                  = plugin;
         this.waitingPlayers          = new HashSet<>();
         this.playingPlayers          = new HashSet<>();
@@ -95,8 +98,8 @@ public class GameManager {
         borderShrinkSeconds       = plugin.getConfig().getInt("border.shrinkSeconds", 3600);
         borderShrinkToZeroSeconds = plugin.getConfig().getInt("border.shrinkToZeroSeconds", 60);
 
-        secondsBeforeArena = plugin.getConfig().getInt("arena.secondsBeforeArena", 60);
-        secondsAfterArena  = plugin.getConfig().getInt("arena.secondsAfterArena", 60);
+        secondsBeforeArena      = plugin.getConfig().getInt("arena.secondsBeforeArena", 30);
+        secondsAfterArena       = plugin.getConfig().getInt("arena.secondsAfterArena", 60);
 
         // Регистрация команд (Scoreboard teams)
         registerTeams();
@@ -363,6 +366,10 @@ public class GameManager {
         // Убираем игроку команду
         removeTeam(player.getUniqueId());
 
+        // Выставляем игроку право от MultiVerse-Core игнорировать смену гейммода при переходе в другие миры,
+        // так как это делает сам плагин
+        plugin.setPermission(player, "mv.bypass.gamemode.*", true);
+
         // Очищаем все эффекты
         player.getActivePotionEffects().forEach(potionEffect -> player.removePotionEffect(potionEffect.getType()));
 
@@ -499,6 +506,9 @@ public class GameManager {
                 // Чистим все достижения игрокам, чтобы они появлялись снова
                 revokeAllAdvancements();
 
+                // Подготавливаем координаты появления команд
+                prepareTeamSpawnLocations();
+
                 // Телепортируем команды на арену
                 teleportTeamsToArena();
 
@@ -524,12 +534,14 @@ public class GameManager {
 
         // Старт отсчёта до арены
         startCountdownTask = new BukkitRunnable() {
-            int countdown = secondsBeforeArena;
+            int countdownSecondsBeforeArena = secondsBeforeArena;
 
             @Override
             public void run() {
-                Bukkit.broadcastMessage(ChatColor.AQUA + "До арены осталось " + ChatColor.BOLD + countdown + ChatColor.AQUA + " секунд!");
-                if (--countdown <= 0) {
+                if (--countdownSecondsBeforeArena > 0) {
+                    Bukkit.broadcastMessage(ChatColor.AQUA + "До арены осталось " + ChatColor.BOLD + countdownSecondsBeforeArena +
+                            ChatColor.AQUA + " секунд!");
+                } else {
                     cancel();
                 }
             }
@@ -798,68 +810,27 @@ public class GameManager {
     }
 
     /**
-     * Равномерно распределяет команды по территории арены.
+     * Подготавливает координаты появления для каждой команды и сохраняет их в переменной teamSpawnLocations.
      */
-    private void teleportTeamsToArena() {
-        Random random             = new Random();
-        WorldBorder border        = arenaWorld.getWorldBorder();
+    private void prepareTeamSpawnLocations() {
+        Random random = new Random();
+        WorldBorder border = arenaWorld.getWorldBorder();
         double borderSize         = border.getSize();
         double centerX            = arenaWorld.getSpawnLocation().getX();
         double centerZ            = arenaWorld.getSpawnLocation().getZ();
         double maxAvailableRadius = (borderSize / 2) - 20; // отступ от границы мира
-
-        // Используйте часть доступного радиуса, чтобы гарантировать, что точки появления не будут слишком близко к границе.
-        double spawnCircleRadius = maxAvailableRadius * 0.7;
-
-        // Самая большая высота мира
+        double spawnCircleRadius  = maxAvailableRadius * 0.7;
         final int maxY = 256;
 
-        // Создаём объекты нужных эффектов, которые выдадим игроку в начале арены (максимальный уровень, но лишь на время)
-        PotionEffect resistancePotionEffect  = new PotionEffect(PotionEffectType.RESISTANCE, 120 * 20, Integer.MAX_VALUE, false, false);
-        PotionEffect saturationPotionEffect  = new PotionEffect(PotionEffectType.SATURATION, 120 * 20, Integer.MAX_VALUE, false, false);
-        PotionEffect slowFallingPotionEffect = new PotionEffect(PotionEffectType.SLOW_FALLING, 2 * 20, 4, false, false);
-
-        for (UUID playerId : waitingPlayers) {
-            Player player = Bukkit.getPlayer(playerId);
-            if (player == null) {
-                continue;
-            }
-
-            // Вдруг игрок вышел
-            if (!player.isOnline()) {
-                continue;
-            }
-
-            // Если пользователь умер, то сообщаем ему об этом
-            if (player.isDead()) {
-                player.sendMessage(ChatColor.RED + "Вы умерли, невозможно переместить вас на арену!");
-                continue;
-            }
-
-            // Указываем, что игрок активен на арене
-            addPlayingPlayer(playerId);
-        }
-
-        // Если слишком мало игроков или команд для запуска игры
-        if (playingPlayers.size() <= 1 || availableTeams.size() <= 1) {
-            Bukkit.broadcastMessage(ChatColor.YELLOW + "Слишком мало игроков или команд для начала игры! Отмена!");
-            endGame();
-            return;
-        }
-
-        // Создайте карту для хранения мест появления каждой команды.
-        Map<String, Location> teamSpawnLocations = new HashMap<>();
+        teamSpawnLocations = new HashMap<>();
         int teamCount = availableTeams.size();
-        // Создайте случайное угловое смещение, чтобы немного изменить общую компоновку.
         double angleOffset = random.nextDouble() * 2 * Math.PI;
-
         int index = 0;
         for (String team : availableTeams.keySet()) {
-            // Равномерно распределите команды по углам.
-            double theta = angleOffset + (2 * Math.PI * index / teamCount);
-            // Добавьте небольшое случайное радиальное отклонение от 0,9 до 1,1.
+            // Вычисляем угол и радиальное отклонение для распределения точек
+            double theta           = angleOffset + (2 * Math.PI * index / teamCount);
             double radialVariation = 0.9 + 0.2 * random.nextDouble();
-            double teamRadius = spawnCircleRadius * radialVariation;
+            double teamRadius      = spawnCircleRadius * radialVariation;
 
             double randomX = centerX + teamRadius * Math.cos(theta);
             double randomZ = centerZ + teamRadius * Math.sin(theta);
@@ -868,43 +839,76 @@ public class GameManager {
             teamSpawnLocations.put(team, teamSpawnLocation);
             index++;
         }
+    }
 
-        // Телепортируем игроков в их командные точки
+    /**
+     * Основной метод телепортации игроков на арену.
+     */
+    public void teleportTeamsToArena() {
+        // Проходим по игрокам, ожидающим начала игры, и отмечаем их как играющих.
+        for (UUID playerId : waitingPlayers) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player == null) {
+                continue;
+            }
+            if (!player.isOnline()) {
+                continue;
+            }
+            if (player.isDead()) {
+                player.sendMessage(ChatColor.RED + "Вы умерли, невозможно переместить вас на арену!");
+                continue;
+            }
+            addPlayingPlayer(playerId);
+        }
+
+        // Если игроков или команд слишком мало – отменяем запуск игры.
+        if (playingPlayers.size() <= 1 || availableTeams.size() <= 1) {
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "Слишком мало игроков или команд для начала игры! Отмена!");
+            endGame();
+            return;
+        }
+
+        // Дополнительные параметры для телепортации
+        double centerX = arenaWorld.getSpawnLocation().getX();
+        double centerZ = arenaWorld.getSpawnLocation().getZ();
+        final int maxY = 256;
+
+        // Создаём эффекты, выдаваемые игроку при появлении
+        PotionEffect resistancePotionEffect  = new PotionEffect(PotionEffectType.RESISTANCE, 120 * 20, Integer.MAX_VALUE, false, false);
+        PotionEffect saturationPotionEffect  = new PotionEffect(PotionEffectType.SATURATION, 120 * 20, Integer.MAX_VALUE, false, false);
+        PotionEffect slowFallingPotionEffect = new PotionEffect(PotionEffectType.SLOW_FALLING, 2 * 20, 4, false, false);
+
+        // Телепортируем каждого играющего игрока в его точку появления (или в центр, если для его команды точки нет)
         for (UUID playerId : playingPlayers) {
             Player player = Bukkit.getPlayer(playerId);
             if (player == null) {
                 continue;
             }
-
             String team = getTeam(playerId);
             if (team == null) {
                 player.sendMessage(ChatColor.RED + "У вас не было команды к началу арены по какой-то причине. Невозможно телепортировать на арену.");
                 continue;
             }
 
+            // Если для команды не найдена точка – используем центр арены.
             Location spawnLocation = teamSpawnLocations.getOrDefault(team, new Location(arenaWorld, centerX, maxY, centerZ));
 
-            // Очищаем инвентарь
+            // Очищаем инвентарь и эффекты игрока
             player.getInventory().clear();
-            // Очищаем все эффекты
-            player.getActivePotionEffects().forEach(potionEffect -> player.removePotionEffect(potionEffect.getType()));
+            player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
 
-            // Предзагрузка чанка
-            arenaWorld.loadChunk(spawnLocation.getChunk());
-
-            // Телепортируем игрока в точку команды
+            // Телепортируем игрока, переводим в режим выживания и выдаём эффекты
             player.teleport(spawnLocation);
-
-            // Даём эффект бессмертия и сытости на время
+            player.setGameMode(GameMode.SURVIVAL);
             player.addPotionEffect(resistancePotionEffect);
             player.addPotionEffect(saturationPotionEffect);
             player.addPotionEffect(slowFallingPotionEffect);
 
-            // Выдаём кит-набор игроку
+            // Выдаём игроку кит (набор предметов)
             KitSelectionGUI.kitManager.giveKit(player);
 
-            // Сообщение в чате
-            player.sendMessage(ChatColor.BOLD + "" + ChatColor.GOLD + "Вы появляетесь на арене со своей командой!");
+            // Сообщаем игроку о появлении
+            player.sendMessage(ChatColor.BOLD.toString() + ChatColor.GOLD + "Вы появляетесь на арене со своей командой!");
         }
     }
 
@@ -1171,6 +1175,9 @@ public class GameManager {
         synchronized (lock) {
             playingPlayers.clear();
         }
+
+        // Очищаем точки спавна команд
+        teamSpawnLocations.clear();
 
         // Очищаем голосования игроков
         votedForStartingPlayers.clear();

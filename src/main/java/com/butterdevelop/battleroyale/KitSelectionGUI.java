@@ -16,11 +16,14 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Интерфейс для выбора кит-набора
+ */
 public class KitSelectionGUI implements Listener {
 
     public static KitManager kitManager;
 
-    public static final int INVENTORY_INITIAL_SLOTS_AMOUNT = 18;
+    public static final int INVENTORY_INITIAL_SLOTS_AMOUNT = 27;
 
     public KitSelectionGUI(BattleRoyalePlugin plugin) {
         kitManager = new KitManager(plugin);
@@ -53,7 +56,7 @@ public class KitSelectionGUI implements Listener {
                 lore.add(ChatColor.GRAY + "" + ChatColor.BOLD + "Предметы набора:");
                 kitItems.forEach(item -> {
                     if (item.getItemMeta() != null) {
-                        lore.add(ChatColor.GRAY + item.getItemMeta().getDisplayName() + " (x" + item.getAmount() + ")");
+                        lore.add(ChatColor.GRAY + item.getItemMeta().getDisplayName() + ChatColor.BOLD + " x" + item.getAmount());
                     }
                 });
 
