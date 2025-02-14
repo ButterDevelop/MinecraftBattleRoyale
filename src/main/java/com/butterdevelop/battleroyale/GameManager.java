@@ -16,7 +16,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
@@ -1090,7 +1089,7 @@ public class GameManager {
     private void startAirRise() {
         Bukkit.broadcastMessage(ChatColor.DARK_PURPLE + "Начинается удаление блоков с самого низа мира.");
 
-        final int startY = -64; // стартовая высота для уничтожения (начало мира)
+        final int startY = arenaWorld.getMinHeight(); // стартовая высота для уничтожения (начало мира)
         airTask = new BukkitRunnable() {
             int currentY = startY;
             @Override
@@ -1108,7 +1107,7 @@ public class GameManager {
                 }
                 currentY++;
                 // Останавливаем, если воздух достигнет определённой высоты (например, 256)
-                if (currentY > 256) {
+                if (currentY > arenaWorld.getMaxHeight()) {
                     // Делаем border до 0, чтобы нанести урон всем
                     shrinkBorderToZero();
 
